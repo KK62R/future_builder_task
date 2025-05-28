@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 
 class MainScreen extends StatefulWidget {
@@ -8,16 +10,21 @@ class MainScreen extends StatefulWidget {
 }
 
 class _MainScreenState extends State<MainScreen> {
+  final TextEditingController _controller = TextEditingController();
+  Future<String>? _futureCity;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(title: const Text('Stadt suche'),),
       body: Padding(
-        padding: const EdgeInsets.all(8.0),
+        padding: const EdgeInsets.all(16.0),
         child: Center(
           child: Column(
-            spacing: 32,
+            spacing: 52,
             children: [
               TextFormField(
+                controller: _controller,
                 decoration: InputDecoration(
                   border: OutlineInputBorder(),
                   labelText: "Postleitzahl",
@@ -25,13 +32,28 @@ class _MainScreenState extends State<MainScreen> {
               ),
               OutlinedButton(
                 onPressed: () {
-                  // TODO: implementiere Suche
+                  setState(() {
+                    _futureCity = getCityFromZip(_controller.text);
+                  });
                 },
                 child: const Text("Suche"),
               ),
-              Text(
-                "Ergebnis: Noch keine PLZ gesucht",
-                style: Theme.of(context).textTheme.labelLarge,
+              FutureBuilder<String>(
+                future: _futureCity,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const CircularProgressIndicator();
+                  } else if (snapshot.hasError) {
+                    return Text("Error: ${snapshot.error}");
+                  } else if (snapshot.hasData) {
+                    return Text(
+                      "Ergebnis: ${snapshot.data}",
+                      style: Theme.of(context).textTheme.labelLarge,
+                    );
+                  } else {
+                    return const Text("Ergebnis: Noch keine PLZ gesucht");
+                  }
+                },
               ),
             ],
           ),
@@ -42,12 +64,11 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   void dispose() {
-    // TODO: dispose controllers
+    _controller.dispose(); // Dispose of the controller
     super.dispose();
   }
 
   Future<String> getCityFromZip(String zip) async {
-    // simuliere Dauer der Datenbank-Anfrage
     await Future.delayed(const Duration(seconds: 3));
 
     switch (zip) {
